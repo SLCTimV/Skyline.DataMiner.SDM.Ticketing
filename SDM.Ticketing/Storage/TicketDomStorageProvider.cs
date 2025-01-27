@@ -10,22 +10,23 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+
     using DomHelpers.SlcTicketing;
 
-    using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
     using Skyline.DataMiner.Net;
-    using Skyline.DataMiner.Net.Messages;
+    using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
+    using Skyline.DataMiner.Net.ManagerStore;
     using Skyline.DataMiner.Net.Messages.SLDataGateway;
-    using Skyline.DataMiner.SDM;
     using Skyline.DataMiner.SDM.Ticketing.Exposers;
-    using Skyline.DataMiner.SDM.Ticketing.Models;
     using Skyline.DataMiner.SDM.Ticketing.Storage;
+
+    using SLDataGateway.API.Querying;
+    using SLDataGateway.API.Types.Querying;
 
     public class TicketDomStorageProvider : IStorageProvider<Ticket>
     {
         private readonly IConnection connection;
         private readonly DomHelper ticketHelper;
-
         public TicketDomStorageProvider(IConnection connection)
         {
             this.connection = connection;
@@ -44,10 +45,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
         {
             if (filter == null)
             {
-                return ticketHelper.DomInstances
-                    .Read(DomInstanceExposers.DomDefinitionId.Equal(SlcTicketingIds.Definitions.Ticket.Id))
-                    .Distinct()
-                    .Select(x => FromInstance(new TicketInstance(x))); ;
+                return Enumerable.Empty<Ticket>();
             }
 
             var flatFilter = filter.flatten();
@@ -71,6 +69,45 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
             return instances.Distinct().Select(x => FromInstance(new TicketInstance(x)));
         }
 
+        public IEnumerable<Ticket> Read(IQuery<Ticket> query)
+        {
+            if (query == null)
+            {
+                return Enumerable.Empty<Ticket>();
+            }
+
+            var flatFilter = query.Filter.flatten();
+            var filters = new List<FilterElement<DomInstance>>();
+            foreach (var andFilter in flatFilter)
+            {
+                var domFilters = new List<FilterElement<DomInstance>> { DomInstanceExposers.DomDefinitionId.Equal(SlcTicketingIds.Definitions.Ticket.Id) };
+                foreach (var subFilter in andFilter.subFilters)
+                {
+                    domFilters.Add(TranslateExposer(subFilter));
+                }
+
+                if (domFilters.Count < 1)
+                {
+                    continue;
+                }
+
+                filters.Add(new ANDFilterElement<DomInstance>(domFilters.ToArray()));
+            }
+
+            var domOrder = OrderBy.Default;
+            foreach (var order in query.Order.Elements)
+            {
+                domOrder = domOrder.SingleConcat(TranslateOrderBy(order));
+            }
+
+            return ticketHelper.DomInstances.Read(new ORFilterElement<DomInstance>(filters.ToArray())
+                .ToQuery()
+                .WithLimit(query.Limit)
+                .WithOrder(domOrder))
+                .Distinct()
+                .Select(x => FromInstance(new TicketInstance(x)));
+        }
+
         public Ticket Update(Ticket updateObject)
         {
             var domTicket = ToInstance(updateObject);
@@ -92,22 +129,21 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
             {
                 TicketID = ticket.ID,
                 TicketDescription = ticket.Description,
-                //TicketType = ticket.Type,
+                TicketType = ticket.Type,
                 TicketPriority = (SlcTicketingIds.Enums.Ticketpriorityenum)(int)ticket.Priority,
                 TicketSeverity = (SlcTicketingIds.Enums.Ticketseverityenum)(int)ticket.Severity,
                 TicketRequestedResolutionDate = ticket.RequestedResolutionDate,
-                TicketExpectedResolutionDate = ticket.ExpectdeResolutionDate,
+                TicketExpectedResolutionDate = ticket.ExpectedResolutionDate,
             };
-
             TicketInstance instance;
             if (ticket.Guid == Guid.Empty)
             {
                 instance = new TicketInstance(new DomInstance
                 {
-                    DomDefinitionId = SlcTicketingIds.Definitions.Ticket,
+                    DomDefinitionId = SlcTicketingIds.Definitions.Ticket
                 })
                 {
-                    TicketGeneral = fields,
+                    TicketGeneral = fields
                 };
             }
             else
@@ -115,10 +151,10 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
                 instance = new TicketInstance(new DomInstance
                 {
                     ID = new DomInstanceId(ticket.Guid),
-                    DomDefinitionId = SlcTicketingIds.Definitions.Ticket,
+                    DomDefinitionId = SlcTicketingIds.Definitions.Ticket
                 })
                 {
-                    TicketGeneral = fields,
+                    TicketGeneral = fields
                 };
             }
 
@@ -127,17 +163,105 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
 
         private static Ticket FromInstance(TicketInstance ticket)
         {
+            var rawDom = ticket.ToInstance();
             return new Ticket
             {
                 Guid = ticket.ID.Id,
                 ID = ticket.TicketGeneral.TicketID,
                 Description = ticket.TicketGeneral.TicketDescription,
-                //Type = ticket.TicketGeneral.Type,
-                Priority = (TicketPriority)(int)ticket.TicketGeneral.TicketPriority,
-                Severity = (TicketSeverity)(int)ticket.TicketGeneral.TicketSeverity,
+                Type = ticket.TicketGeneral.TicketType.Value,
+                Priority = (TicketPriority)(int)ticket.TicketGeneral.TicketPriority.Value,
+                Severity = (TicketSeverity)(int)ticket.TicketGeneral.TicketSeverity.Value,
                 RequestedResolutionDate = ticket.TicketGeneral.TicketRequestedResolutionDate.Value,
-                ExpectdeResolutionDate = ticket.TicketGeneral.TicketExpectedResolutionDate.Value,
+                ExpectedResolutionDate = ticket.TicketGeneral.TicketExpectedResolutionDate.Value,
+                LastModified = ((ITrackLastModified)rawDom).LastModified,
+                LastModifiedBy = ((ITrackLastModifiedBy)rawDom).LastModifiedBy,
+                CreatedAt = ((ITrackCreatedAt)rawDom).CreatedAt,
+                CreatedBy = ((ITrackCreatedBy)rawDom).CreatedBy,
             };
+        }
+
+        private static IOrderByElement TranslateOrderBy(IOrderByElement order)
+        {
+            switch (order.Exposer.fieldName)
+            {
+                case nameof(Ticket.Guid):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.Id)
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.ID):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketID))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.Description):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketDescription))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.Type):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketType))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.Priority):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketPriority))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.Severity):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketSeverity))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.RequestedResolutionDate):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketRequestedResolutionDate))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.ExpectedResolutionDate):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketExpectedResolutionDate))
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.LastModified):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.LastModified)
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.LastModifiedBy):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.LastModifiedBy)
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.CreatedAt):
+                    var temp = OrderByElement.Default;
+
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.CreatedAt)
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                case nameof(Ticket.CreatedBy):
+                    return OrderByElement.Default
+                        .WithFieldExposer(DomInstanceExposers.CreatedBy)
+                        .WithSortOrder(order.SortOrder)
+                        .WithNaturalSort(order.Options.NaturalSort);
+
+                default:
+                    throw new NotSupportedException("This comparer option is not supported yet.");
+            }
         }
 
         private static FilterElement<DomInstance> TranslateExposer(FilterElement<Ticket> filter)
@@ -154,53 +278,29 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
             switch (fieldName)
             {
                 case nameof(Ticket.Guid):
-                    return new ManagedFilter<DomInstance, Guid>(
-                        DomInstanceExposers.Id,
-                        comparer,
-                        (Guid)fieldValue,
-                        (value) => value.ID.Id.Equals((Guid)fieldValue));
-
+                    return new ManagedFilter<DomInstance, Guid>(DomInstanceExposers.Id, comparer, (Guid)fieldValue, (value) => value.ID.Id.Equals((Guid)fieldValue));
                 case nameof(Ticket.ID):
-                    return TranslateFilter(
-                        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketID),
-                        comparer,
-                        (string)fieldValue);
-
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketID), comparer, (String)fieldValue);
                 case nameof(Ticket.Description):
-                    return TranslateFilter(
-                        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketDescription),
-                        comparer,
-                        (string)fieldValue);
-
-                //case nameof(Ticket.Type):
-                //    return TranslateFilter(
-                //        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketType),
-                //        comparer,
-                //        (TicketType)fieldValue);
-
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketDescription), comparer, (String)fieldValue);
+                case nameof(Ticket.Type):
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketType), comparer, (Guid)fieldValue);
                 case nameof(Ticket.Priority):
-                    return TranslateFilter(
-                        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketPriority),
-                        comparer,
-                        (int)fieldValue);
-
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketPriority), comparer, (int)fieldValue);
                 case nameof(Ticket.Severity):
-                    return TranslateFilter(
-                        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketSeverity),
-                        comparer,
-                        (int)fieldValue);
-
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketSeverity), comparer, (int)fieldValue);
                 case nameof(Ticket.RequestedResolutionDate):
-                    return TranslateFilter(
-                        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketRequestedResolutionDate),
-                        comparer,
-                        (DateTime)fieldValue);
-                case nameof(Ticket.ExpectdeResolutionDate):
-                    return TranslateFilter(
-                        DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketExpectedResolutionDate),
-                        comparer,
-                        (DateTime)fieldValue);
-
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketRequestedResolutionDate), comparer, (DateTime)fieldValue);
+                case nameof(Ticket.ExpectedResolutionDate):
+                    return TranslateFilter(DomInstanceExposers.FieldValues.DomInstanceField(SlcTicketingIds.Sections.TicketGeneral.TicketExpectedResolutionDate), comparer, (DateTime)fieldValue);
+                case nameof(Ticket.LastModified):
+                    return new ManagedFilter<DomInstance, DateTime>(DomInstanceExposers.LastModified, comparer, (DateTime)fieldValue, (value) => ((ITrackLastModified)value).LastModified.Equals((DateTime)fieldValue));
+                case nameof(Ticket.LastModifiedBy):
+                    return new ManagedFilter<DomInstance, String>(DomInstanceExposers.LastModifiedBy, comparer, (String)fieldValue, (value) => ((ITrackLastModifiedBy)value).LastModifiedBy.Equals((String)fieldValue));
+                case nameof(Ticket.CreatedAt):
+                    return new ManagedFilter<DomInstance, DateTime>(DomInstanceExposers.CreatedAt, comparer, (DateTime)fieldValue, (value) => ((ITrackCreatedAt)value).CreatedAt.Equals((DateTime)fieldValue));
+                case nameof(Ticket.CreatedBy):
+                    return new ManagedFilter<DomInstance, String>(DomInstanceExposers.CreatedBy, comparer, (String)fieldValue, (value) => ((ITrackCreatedBy)value).CreatedBy.Equals((String)fieldValue));
                 default:
                     throw new NotSupportedException("This comparer option is not supported yet.");
             }

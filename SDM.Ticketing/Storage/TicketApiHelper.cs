@@ -5,15 +5,16 @@
 
     using Skyline.DataMiner.Net;
     using Skyline.DataMiner.Net.Messages.SLDataGateway;
-    using Skyline.DataMiner.SDM.Ticketing.Models;
     using Skyline.DataMiner.SDM.Ticketing.Storage;
 
-    public class TicketStorageProvider : IStorageProvider<Ticket>
+    using SLDataGateway.API.Types.Querying;
+
+    public class TicketApiHelper : IStorageProvider<Ticket>
     {
         private readonly IConnection connection;
         private readonly IStorageProvider<Ticket> provider;
 
-        public TicketStorageProvider(IConnection connection)
+        public TicketApiHelper(IConnection connection)
         {
             this.connection = connection;
             this.provider = new TicketDomStorageProvider(connection);
@@ -25,6 +26,11 @@
         }
 
         public IEnumerable<Ticket> Read(FilterElement<Ticket> filter)
+        {
+            return provider.Read(filter);
+        }
+
+        public IEnumerable<Ticket> Read(IQuery<Ticket> filter)
         {
             return provider.Read(filter);
         }

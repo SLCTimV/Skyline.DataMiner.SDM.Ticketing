@@ -4,7 +4,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
 {
     using System;
 
-    using Skyline.DataMiner.Net.Jobs;
+    using Skyline.DataMiner.SDM.Abstractions.Attributes;
 
     [DataMinerObject]
     public class Ticket
@@ -13,9 +13,14 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
 
         public string ID { get; set; }
 
+        public string Name { get; set; }
+
         public string Description { get; set; }
 
-        public TicketType Type { get; set; }
+        [DataMinerLink(typeof(TicketType))]
+        public Guid Type { get; set; }
+
+        public TicketStatus Status { get; set; } = TicketStatus.Acknowledged;
 
         public TicketPriority Priority { get; set; } = TicketPriority.Low;
 
@@ -23,6 +28,14 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
 
         public DateTime RequestedResolutionDate { get; set; }
 
-        public DateTime ExpectdeResolutionDate { get; set; }
+        public DateTime ExpectedResolutionDate { get; set; }
+
+        public DateTime LastModified { get; set; }
+
+        public string LastModifiedBy { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public string CreatedBy { get; set; }
     }
 }

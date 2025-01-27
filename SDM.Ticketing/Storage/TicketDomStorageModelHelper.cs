@@ -198,6 +198,20 @@ namespace DomHelpers
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the section is empty.
+        /// </summary>
+        /// <value>
+        /// <see langword="true"/> if the section doesn't contains any field values, otherwise, <see langword="false"/>.
+        /// </value>
+        public bool IsEmpty
+        {
+            get
+            {
+                return !section.FieldValues.Any();
+            }
+        }
+
         public static implicit operator SectionDefinitionID(DomSectionBase sectionBase)
         {
             return sectionBase.section.SectionDefinitionID;
@@ -565,6 +579,67 @@ namespace DomHelpers.SlcTicketing
                     public const string Closed = "b7e871b6-809f-4489-be16-f8df9dac31f5";
                     public const string Pending = "6702e253-eb58-426b-9e8e-59bcb6d484bf";
                     public const string Held = "8ddbd524-b836-4a2b-91b9-96b600ce2a5c";
+                    public static string ToValue(StatusesEnum @enum)
+                    {
+                        switch (@enum)
+                        {
+                            case StatusesEnum.Acknowledged:
+                                return Acknowledged;
+                            case StatusesEnum.InProgress:
+                                return InProgress;
+                            case StatusesEnum.Rejected:
+                                return Rejected;
+                            case StatusesEnum.Resolved:
+                                return Resolved;
+                            case StatusesEnum.Cancelled:
+                                return Cancelled;
+                            case StatusesEnum.Closed:
+                                return Closed;
+                            case StatusesEnum.Pending:
+                                return Pending;
+                            case StatusesEnum.Held:
+                                return Held;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(@enum), @enum, "Invalid value.");
+                        }
+                    }
+
+                    public static StatusesEnum ToEnum(string s)
+                    {
+                        switch (s)
+                        {
+                            case Acknowledged:
+                                return StatusesEnum.Acknowledged;
+                            case InProgress:
+                                return StatusesEnum.InProgress;
+                            case Rejected:
+                                return StatusesEnum.Rejected;
+                            case Resolved:
+                                return StatusesEnum.Resolved;
+                            case Cancelled:
+                                return StatusesEnum.Cancelled;
+                            case Closed:
+                                return StatusesEnum.Closed;
+                            case Pending:
+                                return StatusesEnum.Pending;
+                            case Held:
+                                return StatusesEnum.Held;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(s), s, "Invalid value.");
+                        }
+                    }
+                }
+
+                public enum StatusesEnum
+                {
+                    Acknowledged,
+                    InProgress,
+                    Rejected,
+                    Resolved,
+                    Cancelled,
+                    Closed,
+                    Pending,
+                    Held
                 }
 
                 public static class Transitions
@@ -581,6 +656,87 @@ namespace DomHelpers.SlcTicketing
                     public const string Pending_Cancelled = "pending_cancelled";
                     public const string Pending_Inprogress = "pending_inprogress";
                     public const string Held_Inprogress = "held_inprogress";
+                    public static string ToValue(TransitionsEnum @enum)
+                    {
+                        switch (@enum)
+                        {
+                            case TransitionsEnum.Acknowledged_Inprogress:
+                                return Acknowledged_Inprogress;
+                            case TransitionsEnum.Acknowledged_Rejected:
+                                return Acknowledged_Rejected;
+                            case TransitionsEnum.Acknowledged_Cancelled:
+                                return Acknowledged_Cancelled;
+                            case TransitionsEnum.Inprogress_Resolved:
+                                return Inprogress_Resolved;
+                            case TransitionsEnum.Inprogress_Cancelled:
+                                return Inprogress_Cancelled;
+                            case TransitionsEnum.Inprogress_Pending:
+                                return Inprogress_Pending;
+                            case TransitionsEnum.Inprogress_Held:
+                                return Inprogress_Held;
+                            case TransitionsEnum.Resolved_Closed:
+                                return Resolved_Closed;
+                            case TransitionsEnum.Resolved_Inprogress:
+                                return Resolved_Inprogress;
+                            case TransitionsEnum.Pending_Cancelled:
+                                return Pending_Cancelled;
+                            case TransitionsEnum.Pending_Inprogress:
+                                return Pending_Inprogress;
+                            case TransitionsEnum.Held_Inprogress:
+                                return Held_Inprogress;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(@enum), @enum, "Invalid value.");
+                        }
+                    }
+
+                    public static TransitionsEnum ToEnum(string s)
+                    {
+                        switch (s)
+                        {
+                            case Acknowledged_Inprogress:
+                                return TransitionsEnum.Acknowledged_Inprogress;
+                            case Acknowledged_Rejected:
+                                return TransitionsEnum.Acknowledged_Rejected;
+                            case Acknowledged_Cancelled:
+                                return TransitionsEnum.Acknowledged_Cancelled;
+                            case Inprogress_Resolved:
+                                return TransitionsEnum.Inprogress_Resolved;
+                            case Inprogress_Cancelled:
+                                return TransitionsEnum.Inprogress_Cancelled;
+                            case Inprogress_Pending:
+                                return TransitionsEnum.Inprogress_Pending;
+                            case Inprogress_Held:
+                                return TransitionsEnum.Inprogress_Held;
+                            case Resolved_Closed:
+                                return TransitionsEnum.Resolved_Closed;
+                            case Resolved_Inprogress:
+                                return TransitionsEnum.Resolved_Inprogress;
+                            case Pending_Cancelled:
+                                return TransitionsEnum.Pending_Cancelled;
+                            case Pending_Inprogress:
+                                return TransitionsEnum.Pending_Inprogress;
+                            case Held_Inprogress:
+                                return TransitionsEnum.Held_Inprogress;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(s), s, "Invalid value.");
+                        }
+                    }
+                }
+
+                public enum TransitionsEnum
+                {
+                    Acknowledged_Inprogress,
+                    Acknowledged_Rejected,
+                    Acknowledged_Cancelled,
+                    Inprogress_Resolved,
+                    Inprogress_Cancelled,
+                    Inprogress_Pending,
+                    Inprogress_Held,
+                    Resolved_Closed,
+                    Resolved_Inprogress,
+                    Pending_Cancelled,
+                    Pending_Inprogress,
+                    Held_Inprogress
                 }
 
                 public static class Actions
@@ -592,6 +748,62 @@ namespace DomHelpers.SlcTicketing
                     public const string Reject = "reject";
                     public const string SetToPending = "set to pending";
                     public const string Hold = "hold";
+                    public static string ToValue(ActionsEnum @enum)
+                    {
+                        switch (@enum)
+                        {
+                            case ActionsEnum.SetToInProgress:
+                                return SetToInProgress;
+                            case ActionsEnum.Resolve:
+                                return Resolve;
+                            case ActionsEnum.Close:
+                                return Close;
+                            case ActionsEnum.Cancel:
+                                return Cancel;
+                            case ActionsEnum.Reject:
+                                return Reject;
+                            case ActionsEnum.SetToPending:
+                                return SetToPending;
+                            case ActionsEnum.Hold:
+                                return Hold;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(@enum), @enum, "Invalid value.");
+                        }
+                    }
+
+                    public static ActionsEnum ToEnum(string s)
+                    {
+                        switch (s)
+                        {
+                            case SetToInProgress:
+                                return ActionsEnum.SetToInProgress;
+                            case Resolve:
+                                return ActionsEnum.Resolve;
+                            case Close:
+                                return ActionsEnum.Close;
+                            case Cancel:
+                                return ActionsEnum.Cancel;
+                            case Reject:
+                                return ActionsEnum.Reject;
+                            case SetToPending:
+                                return ActionsEnum.SetToPending;
+                            case Hold:
+                                return ActionsEnum.Hold;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(s), s, "Invalid value.");
+                        }
+                    }
+                }
+
+                public enum ActionsEnum
+                {
+                    SetToInProgress,
+                    Resolve,
+                    Close,
+                    Cancel,
+                    Reject,
+                    SetToPending,
+                    Hold
                 }
             }
         }
@@ -609,6 +821,7 @@ namespace DomHelpers.SlcTicketing
     using System.Collections.Generic;
     using System.Linq;
 
+    using Skyline.DataMiner.Net;
     using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
     using Skyline.DataMiner.Net.Messages;
 
@@ -699,14 +912,24 @@ namespace DomHelpers.SlcTicketing
     /// Represents a wrapper class for accessing a TicketInstance DOM instance.
     /// The <see cref="TicketInstance"/> class provides simplified access to the data and functionality of the underlying DOM instance, allowing for easier manipulation and retrieval of data from DOM.
     /// </summary>
-    public partial class TicketInstance : DomInstanceBase
+    public partial class TicketInstance : DomInstanceBase, IEquatable<TicketInstance>
     {
+        public class TicketOptions
+        {
+            public SlcTicketingIds.Behaviors.Tickets.StatusesEnum InitialStatus { get; set; } = SlcTicketingIds.Behaviors.Tickets.StatusesEnum.Acknowledged;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TicketInstance"/> class. Creates an empty <see cref="TicketInstance"/> instance with default settings.
         /// </summary>
-        public TicketInstance() : base(SlcTicketingIds.Definitions.Ticket)
+        public TicketInstance(TicketOptions options = null) : base(SlcTicketingIds.Definitions.Ticket)
         {
             InitializeProperties();
+
+            if(options != null)
+            {
+                domInstance.StatusId = SlcTicketingIds.Behaviors.Tickets.Statuses.ToValue(options.InitialStatus);
+            }
         }
 
         /// <summary>
@@ -783,13 +1006,21 @@ namespace DomHelpers.SlcTicketing
         public override DomInstance ToInstance()
         {
             domInstance.Sections.Clear();
-            domInstance.Sections.Add(TicketAssigmentInfo.ToSection());
+            if (!TicketAssigmentInfo.IsEmpty)
+            {
+                domInstance.Sections.Add(TicketAssigmentInfo.ToSection());
+            }
+
             foreach (var item in TicketCustomField)
             {
                 domInstance.Sections.Add(item.ToSection());
             }
 
-            domInstance.Sections.Add(TicketStatusInfo.ToSection());
+            if (!TicketStatusInfo.IsEmpty)
+            {
+                domInstance.Sections.Add(TicketStatusInfo.ToSection());
+            }
+
             foreach (var item in TicketExternalIdentifiers)
             {
                 domInstance.Sections.Add(item.ToSection());
@@ -827,6 +1058,46 @@ namespace DomHelpers.SlcTicketing
             TicketExternalIdentifiers = domInstance.Sections.Where(section => section.SectionDefinitionID.Equals(SlcTicketingIds.Sections.TicketExternalIdentifiers.Id)).Select(section => new TicketExternalIdentifiersSection(section)).ToList();
             TicketGeneral = new TicketGeneralSection(domInstance.Sections.FirstOrDefault(section => section.SectionDefinitionID.Equals(SlcTicketingIds.Sections.TicketGeneral.Id)));
             TicketAffectedResources = domInstance.Sections.Where(section => section.SectionDefinitionID.Equals(SlcTicketingIds.Sections.TicketAffectedResources.Id)).Select(section => new TicketAffectedResourcesSection(section)).ToList();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as TicketInstance);
+        }
+
+        public bool Equals(TicketInstance other)
+        {
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if(other is null)
+            {
+                return false;
+            }
+
+            return domInstance.Equals(other.domInstance);
+        }
+
+        public static bool operator ==(TicketInstance left, TicketInstance right)
+        {
+            if(ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if(left is null || right is null)
+            {
+                return false;
+            }
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(TicketInstance left, TicketInstance right)
+        {
+            return !(left == right);
         }
     }
 }
@@ -2304,4 +2575,3 @@ namespace DomHelpers.SlcTicketing
         }
     }
 }
-

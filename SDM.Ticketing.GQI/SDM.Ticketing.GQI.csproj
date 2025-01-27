@@ -1,0 +1,38 @@
+﻿<Project Sdk="Skyline.DataMiner.Sdk/1.0.0-package1">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <Company>Skyline Communications</Company>
+    <Copyright>© Skyline Communications</Copyright>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DataMinerType>AutomationScript</DataMinerType>
+    <GenerateDataMinerPackage>true</GenerateDataMinerPackage>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <CodeAnalysisRuleSet>..\Internal\Code Analysis\qaction-debug.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <CodeAnalysisRuleSet>..\Internal\Code Analysis\qaction-release.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);DCFv1;DBInfo;ALARM_SQUASHING</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Skyline.DataMiner.Dev.Automation" Version="10.4.6" />
+    <PackageReference Include="Skyline.DataMiner.SDM.Ticketing" Version="1.0.1-alpha9" />
+  </ItemGroup>
+  
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties DisLinkedXmlFile="SDM.Ticketing.GQI.xml" DisProjectType="automationScriptProject" DisLinkId="1" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

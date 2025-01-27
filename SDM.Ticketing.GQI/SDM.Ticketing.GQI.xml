@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DMSScript options="272" xmlns="http://www.skyline.be/automation">
+	<Name>SDM_Ticketing_GQI</Name>
+	<Description></Description>
+	<Type>Automation</Type>
+	<Author>SKYLINE2\ArneMA</Author>
+	<CheckSets>FALSE</CheckSets>
+	<Folder>SDM/Ticketing/GQI</Folder>
+
+	<Protocols>
+	</Protocols>
+
+	<Memory>
+	</Memory>
+
+	<Parameters>
+	</Parameters>
+
+	<Script>
+		<Exe id="1" type="csharp">
+			<Value><![CDATA[[Project:SDM.Ticketing.GQI]]]></Value>
+			<Param type="preCompile">true</Param>
+			<Param type="libraryName">SDM_Ticketing_GQI</Param>
+			<Message></Message>
+		</Exe>
+	</Script>
+</DMSScript>
