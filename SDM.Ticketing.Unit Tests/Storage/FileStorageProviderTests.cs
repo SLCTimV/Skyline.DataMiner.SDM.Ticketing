@@ -13,19 +13,40 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
     using Skyline.DataMiner.Net.Messages.SLDataGateway;
     using Skyline.DataMiner.SDM.Ticketing.Exposers;
     using Skyline.DataMiner.SDM.Ticketing.Models;
+    using Skyline.DataMiner.SDM.Ticketing.Storage;
     using Skyline.DataMiner.SDM.Ticketing.Unit_Tests;
 
     using SLDataGateway.API.Querying;
 
     [TestClass]
-    public class TicketStorageProviderTests
+    public class TicketFileStorageProviderTests
     {
+        [TestMethod]
+        public void TEMP()
+        {
+            // Arrange
+            var connection = new ConnectionMock("Files/module.json");
+            var domProvider = new TicketDomStorageProvider(connection.Object);
+            var fileProvider = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
+
+            // Act
+            var filter = new TRUEFilterElement<Ticket>();
+            var tickets = domProvider.Read(filter).ToList();
+            foreach(var ticket in tickets)
+            {
+                //fileProvider.Create(ticket);
+            }
+
+            // Assert
+            tickets.Should().NotBeNull();
+        }
+
         [TestMethod]
         public void ReadTest()
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketDomStorageProvider(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
             var severityFilter = new ORFilterElement<Ticket>(
@@ -45,7 +66,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketDomStorageProvider(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
             var tickets = storageModel.Read(new TRUEFilterElement<Ticket>().OrderBy(TicketExposers.CreatedAt)).ToList();
@@ -62,7 +83,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketDomStorageProvider(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
             var tickets = storageModel.Read(
@@ -83,7 +104,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketDomStorageProvider(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
             var severityFilter = new ORFilterElement<Ticket>(
@@ -105,7 +126,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketDomStorageProvider(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
             var tickets = storageModel.Read(new TRUEFilterElement<Ticket>()).ToList();
@@ -120,19 +141,11 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
             var guid = new Guid("bc8ce57c-c662-4abe-b30e-30f7c3d2c1d7");
 
             // Act
             var tickets = storageModel.Read(TicketExposers.Guid.Equal(guid)).ToList();
-
-            var myTicket = new Ticket
-            {
-                ID = "Ticket 1",
-                Description = "My Awsome Ticket",
-            };
-
-            storageModel.Create(myTicket);
 
             // Assert
             tickets.Should().NotBeNull();
@@ -144,7 +157,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
             var guid = new Guid("bc85e57c-c662-4abe-b30e-30f7c3d2c1d7");
 
             // Act
@@ -160,13 +173,13 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var ticketModel = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
             var ticketTypeModel = new TicketTypeDomStorageProvider(connection.Object);
             var ticketTypeName = "Service Order";
 
             // Act
             var type = ticketTypeModel.Read(TicketTypeExposers.Name.UncheckedEqual(ticketTypeName)).First();
-            var tickets = ticketModel.Read(TicketExposers.Type.UncheckedEqual(type.Guid)).ToList();
+            var tickets = storageModel.Read(TicketExposers.Type.UncheckedEqual(type.Guid)).ToList();
 
             // Assert
             tickets.Should().NotBeNull();
@@ -178,12 +191,12 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var ticketProvider = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
             var timeFilter = DateTime.ParseExact("2024-12-20 10:50:11.499", "yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
 
             // Act
             var filter = TicketExposers.Priority.UncheckedEqual(TicketPriority.Low).Limit(5);
-            var tickets = ticketProvider.Read(filter).ToList();
+            var tickets = storageModel.Read(filter).ToList();
 
             // Assert
             tickets.Should().NotBeNull();
@@ -195,10 +208,10 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var ticketProvider = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
-            var tickets = ticketProvider.Read(
+            var tickets = storageModel.Read(
                 new TRUEFilterElement<Ticket>()
                 .OrderByDescending(TicketExposers.CreatedAt)
                 .Limit(5))
@@ -216,10 +229,10 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var ticketProvider = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
 
             // Act
-            var tickets = ticketProvider.Read(
+            var tickets = storageModel.Read(
                 new TRUEFilterElement<Ticket>()
                 .OrderBy(TicketExposers.CreatedAt)
                 .Limit(5))
@@ -237,12 +250,13 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
         {
             // Arrange
             var connection = new ConnectionMock("Files/module.json");
-            var storageModel = new TicketApiHelper(connection.Object);
+            var storageModel = new TicketFileStorageProvider(connection.Object, @"C:\Skyline_Data\SDM\Tickets");
             var guid = new Guid("bc8ce57c-c662-4abe-b30e-30f7c3d2c1d7");
             var description = "My Awesome new description.";
 
             // Act
             var ticket = storageModel.Read(TicketExposers.Guid.UncheckedEqual(guid)).FirstOrDefault();
+            var oldDescription = ticket.Description;
             ticket.Description = description;
             storageModel.Update(ticket);
 
@@ -251,6 +265,10 @@ namespace Skyline.DataMiner.SDM.Ticketing.Unit_Tests.Storage
             // Assert
             updatedTicket.Should().NotBeNull();
             updatedTicket.Description.Should().BeEquivalentTo(description);
+
+            // Revert
+            ticket.Description = oldDescription;
+            storageModel.Update(ticket);
         }
     }
 }
