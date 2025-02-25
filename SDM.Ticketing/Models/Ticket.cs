@@ -3,7 +3,7 @@
 namespace Skyline.DataMiner.SDM.Ticketing.Models
 {
     using System;
-
+    using System.ComponentModel;
     using Skyline.DataMiner.SDM.Abstractions.Attributes;
 
     [DataMinerObject]
@@ -13,9 +13,7 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
 
         public string ID { get; set; }
 
-        public string Name { get; set; }
-
-        public string Description { get; set; }
+       
 
         [DataMinerLink(typeof(TicketType))]
         public Guid Type { get; set; }
@@ -37,5 +35,34 @@ namespace Skyline.DataMiner.SDM.Ticketing.Models
         public DateTime CreatedAt { get; set; }
 
         public string CreatedBy { get; set; }
+
+        [Mandatory]
+        public string Name { get; set; }
+
+        [Mandatory((int)TicketState.inProgress)]
+        public string Description { get; set; }
+
+        public TicketState State { get;  set; }
+       
+    }
+
+    public enum TicketState
+    {
+        [Description("Acknowledged")]
+        acknowledged,
+        [Description("In Progress")]
+        inProgress,
+        [Description("Rejected")]
+        rejected,
+        [Description("Resolved")]
+        resolved,
+        [Description("Cancelled")]
+        cancelled,
+        [Description("Closed")]
+        closed,
+        [Description("Pending")]
+        pending,
+        [Description("Held")]
+        held
     }
 }

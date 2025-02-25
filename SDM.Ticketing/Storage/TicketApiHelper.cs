@@ -44,5 +44,14 @@
         {
             return provider.Delete(deleteObject);
         }
+
+        public delegate void TicketChangedEventHandler(object sender, TicketChangedEventArgs e);
+
+        public event TicketChangedEventHandler TicketChanged;
+    }
+
+    public class TicketChangedEventArgs : EventArgs
+    {
+
     }
 }
